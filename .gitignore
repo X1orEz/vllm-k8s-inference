@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+results/
+*.csv
+*.log
+k8s/base/secret.yaml
+k8s/**/secret.yaml
+!k8s/base/secret.example.yaml
+models/
+venv/

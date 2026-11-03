@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  labels: { app: vllm }
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: vllm }
+  template:
+    metadata:
+      labels: { app: vllm }
+    spec:
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      initContainers:
+        - name: download-model
+          image: ghcr.io/your-org/vllm-downloader:0.1.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: vllm-config }
+            - secretRef:    { name: vllm-secrets }
+          volumeMounts:
+            - { name: models, mountPath: /models }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+      containers:
+        - name: vllm
+          image: ghcr.io/your-org/vllm-cpu:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: vllm-config }
+            - secretRef:    { name: vllm-secrets }
+          env:
+            - name: TMPDIR
+              value: "/tmp"
+            - name: VLLM_CPU_KVCACHE_SPACE
+              value: "1"
+            - name: VLLM_CPU_OMP_THREADS_BIND
+              value: "0-1"
+          args:
+            - "--model=$(VLLM_MODEL)"
+            - "--served-model-name=$(VLLM_SERVED_NAME)"
+            - "--max-model-len=$(VLLM_MAX_MODEL_LEN)"
+            - "--dtype=$(VLLM_DTYPE)"
+            - "--download-dir=$(VLLM_DOWNLOAD_DIR)"
+            - "--host=0.0.0.0"
+            - "--port=8000"
+            - "--api-key=$(VLLM_API_KEY)"
+            - "--enforce-eager"
+          ports:
+            - { name: http, containerPort: 8000 }
+          volumeMounts:
+            - { name: models, mountPath: /models }
+            - { name: cache,  mountPath: /cache  }
+            - { name: tmp,    mountPath: /tmp    }
+            - { name: shm,    mountPath: /dev/shm }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: "2", memory: "4Gi" }
+            limits:   { cpu: "4", memory: "5500Mi" }
+      volumes:
+        - name: models
+          persistentVolumeClaim: { claimName: vllm-models }
+        - name: cache
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: "256Mi"

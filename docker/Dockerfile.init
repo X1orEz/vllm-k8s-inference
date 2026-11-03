@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+ARG UID=1000
+ARG GID=1000
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    HF_HOME=/models \
+    HF_HUB_CACHE=/models/hub
+
+RUN pip install --no-cache-dir huggingface_hub>=1.31.0
+
+RUN groupadd --gid ${GID} app \
+ && useradd --uid ${UID} --gid app --create-home --shell /bin/bash app \
+ && mkdir -p /models && chown -R app:app /models
+
+COPY --chown=app:app scripts/download_model.py /app/download_model.py
+
+USER app
+WORKDIR /app
+
+ENTRYPOINT ["python", "download_model.py"]

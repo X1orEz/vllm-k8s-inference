@@ -68,7 +68,7 @@ spec:
             readOnlyRootFilesystem: true
             capabilities: { drop: ["ALL"] }
           resources:
-            requests: { cpu: "2", memory: "4Gi" }
+            requests: { cpu: "2", memory: "3Gi" }
             limits:   { cpu: "4", memory: "5500Mi" }
       volumes:
         - name: models

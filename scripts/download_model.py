@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from huggingface_hub import snapshot_download
 
-MODEL_ID = os.environ.get("VLLM_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")
+MODEL_ID = os.environ.get("VLLM_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")
 CACHE = Path(os.environ.get("HF_HUB_CACHE", "/models/hub"))
 TOKEN = os.environ.get("HF_TOKEN") or None
 
